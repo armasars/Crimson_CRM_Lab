@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Crimson CRM Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: a market-ledger page — narrow reading column, one wide interactive "counter" band for the live demo */
+:root{
+  --bg:#FAF7F6; --surface:#FFFFFF; --ink:#1F1416; --muted:#6B5D60; --line:#E7DEDF;
+  --crimson:#A3122A; --crimson-soft:#F6E3E6; --leaf:#2F6B3A; --leaf-soft:#E4F0E5; --amber:#A8650C; --amber-soft:#F7EBD9;
+  --c1:#A3122A; --c2:#2F6B3A; --c3:#A8650C; --c4:#3D5A99;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161012; --surface:#1F181A; --ink:#F3ECED; --muted:#B3A4A7; --line:#3A2E31;
+  --crimson:#F0566F; --crimson-soft:#3A1B21; --leaf:#7CC98A; --leaf-soft:#1C2E20; --amber:#E7A24A; --amber-soft:#33261A;
+  --c1:#F0566F; --c2:#7CC98A; --c3:#E7A24A; --c4:#8EA8E8; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161012; --surface:#1F181A; --ink:#F3ECED; --muted:#B3A4A7; --line:#3A2E31;
+  --crimson:#F0566F; --crimson-soft:#3A1B21; --leaf:#7CC98A; --leaf-soft:#1C2E20; --amber:#E7A24A; --amber-soft:#33261A;
+  --c1:#F0566F; --c2:#7CC98A; --c3:#E7A24A; --c4:#8EA8E8; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--body);padding-inline:20px;padding-block:0 64px}
+.wrap{max-width:1040px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.4rem,6vw,4.2rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(1.6rem,3.4vw,2.3rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0;max-width:65ch}
+.eyebrow{font:500 .75rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--crimson)}
+.muted{color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+section{padding-block:56px;border-top:1px solid var(--line);display:grid;gap:24px}
+
+/* nav */
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:-20px;padding:10px 20px}
+nav .wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+nav b{font-family:var(--display);font-weight:800;color:var(--crimson);margin-right:auto}
+nav a{color:var(--muted);text-decoration:none;font-size:.92rem}
+nav a:hover,nav a:focus-visible{color:var(--ink)}
+
+/* hero */
+.hero{padding-block:56px 40px;display:grid;gap:22px;border-top:0}
+.hero p.lead{font-size:1.2rem;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:8px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--surface);display:grid;gap:4px}
+.stat .v{font:700 2rem/1 var(--display)}
+.stat .v.alert{color:var(--crimson)}
+.stat .k{font-size:.9rem;color:var(--muted)}
+
+/* clusters */
+.clusters{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.cl{border:1px solid var(--line);border-radius:10px;padding:18px;background:var(--surface);display:grid;gap:10px;align-content:start}
+.cl .tag{justify-self:start;font:500 .72rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:6px 8px;border-radius:999px}
+.tag.core{background:var(--crimson-soft);color:var(--crimson)}
+.tag.ok{background:var(--leaf-soft);color:var(--leaf)}
+.tag.risk{background:var(--amber-soft);color:var(--amber)}
+.cl .share{font:800 2.4rem/1 var(--display)}
+.cl dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:.95rem}
+.cl dt{color:var(--muted)} .cl dd{margin:0}
+.cl .action{font-size:.95rem;border-top:1px dashed var(--line);padding-top:10px}
+
+/* demo */
+.counter{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:28px}
+@media (max-width:760px){.counter{grid-template-columns:minmax(0,1fr)}}
+form{display:grid;gap:16px;align-content:start}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:8px}
+legend{font-weight:600;margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips input{position:absolute;opacity:0;pointer-events:none}
+.chips label{border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:.95rem;background:var(--bg)}
+.chips input:checked+label{background:var(--crimson);border-color:var(--crimson);color:var(--surface)}
+.chips input:focus-visible+label{outline:2px solid var(--crimson);outline-offset:2px}
+select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.btn{font:600 1rem var(--body);border:0;border-radius:8px;padding:12px 18px;background:var(--crimson);color:var(--surface);cursor:pointer;justify-self:start}
+.btn.ghost{background:transparent;color:var(--crimson);border:1px solid var(--crimson)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.result{display:grid;gap:18px;align-content:start;min-width:0}
+.profile{font-family:var(--mono);font-size:.85rem;color:var(--muted)}
+.recs{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.rec{display:grid;grid-template-columns:2rem minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.rec .rank{font:800 1.4rem/1 var(--display);color:var(--crimson)}
+.rec .name{font-weight:600}
+.rec .ex{font-size:.88rem;color:var(--muted);overflow-wrap:anywhere}
+.rec .lift{font:500 .85rem var(--mono);color:var(--leaf);white-space:nowrap}
+.offer{display:grid;gap:6px;padding:16px;border-radius:10px;background:var(--crimson-soft);border:1px dashed var(--crimson)}
+.offer .o{font:800 1.4rem/1.1 var(--display);color:var(--crimson)}
+.why{font-size:.9rem;color:var(--muted)}
+
+/* bandit */
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.chart{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:14px;display:grid;gap:8px;min-width:0}
+.chart canvas{width:100%;height:240px;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.note{font-size:.92rem;padding:12px 14px;border-left:3px solid var(--amber);background:var(--amber-soft);border-radius:0 8px 8px 0;max-width:none}
+.outcome{font-size:1.05rem}
+.outcome strong{color:var(--leaf)}
+
+/* rfm */
+.rfm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:760px){.rfm{grid-template-columns:minmax(0,1fr)}}
+.bars{display:grid;gap:10px}
+.bar{display:grid;grid-template-columns:9rem minmax(0,1fr) 2.5rem;gap:10px;align-items:center;font-size:.95rem}
+.bar .track{height:14px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar .fill{height:100%;background:var(--crimson);border-radius:4px}
+.bar.good .fill{background:var(--leaf)} .bar.warn .fill{background:var(--amber)}
+.msgs{display:grid;gap:10px}
+.msg{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);display:grid;gap:4px}
+.msg b{font-size:.85rem;font-family:var(--mono);color:var(--muted);font-weight:500}
+
+/* roadmap */
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:0;padding:0;list-style:none}
+.road li{border-top:3px solid var(--crimson);padding-top:12px;display:grid;gap:6px}
+.road li.next{border-color:var(--line)}
+.road .when{font:500 .75rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+footer{padding-top:32px;border-top:1px solid var(--line);font-size:.9rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+</head>
+<body>
+<nav><div class="wrap">
+  <b>Crimson CRM Lab</b>
+  <a href="#segments">Segments</a><a href="#try">Try it</a><a href="#coupons">Smart coupons</a><a href="#retention">Retention</a><a href="#next">Next steps</a>
+</div></nav>
+
+<main class="wrap">
+  <header class="hero">
+    <span class="eyebrow">TFT · Marketing × MIS · Data-driven CRM</span>
+    <h1>Turning one-time buyers into regulars</h1>
+    <p class="lead">We analysed Crimson's customer sample in Weka, Radiant and Python and built three CRM tools from it: segment recommendations, self-learning coupons and automated retention.</p>
+    <div class="stats">
+      <div class="stat"><span class="v num">92</span><span class="k">customers in the sample</span></div>
+      <div class="stat"><span class="v num">101</span><span class="k">order lines analysed</span></div>
+      <div class="stat"><span class="v alert num">91%</span><span class="k">bought only once (84 of 92)</span></div>
+      <div class="stat"><span class="v num">68%</span><span class="k">live in Seoul, Gyeonggi or Incheon</span></div>
+    </div>
+  </header>
+
+  <section id="segments">
+    <span class="eyebrow">Weka · SimpleKMeans, k = 3</span>
+    <h2>Three customer segments</h2>
+    <p class="muted">Clustering by gender, age, region, funnel and RFM values. Two very large orders (585,708 and 164,900 KRW) raise Segment 2's mean; without them its typical order is close to Segment 1's.</p>
+    <div class="clusters">
+      <article class="cl">
+        <span class="tag core">Core segment</span>
+        <div class="share num">42%</div>
+        <h3>Women in their 30s, capital area</h3>
+        <dl><dt>Channel</dt><dd>Referral</dd><dt>Avg. order</dt><dd class="num">≈ 8,400 KRW</dd><dt>Recency</dt><dd>Medium</dd></dl>
+        <p class="action">Grow the referral program: "Refer a friend, get a bonus".</p>
+      </article>
+      <article class="cl">
+        <span class="tag ok">Most recent</span>
+        <div class="share num">30%</div>
+        <h3>Men in their 30s, capital area</h3>
+        <dl><dt>Channel</dt><dd>SNS ads</dd><dt>Avg. order</dt><dd class="num">≈ 11,300 KRW*</dd><dt>Recency</dt><dd>Highest</dd></dl>
+        <p class="action">Focus SNS campaigns on this group. *Excluding two outlier orders.</p>
+      </article>
+      <article class="cl">
+        <span class="tag risk">Churn risk</span>
+        <div class="share num">27%</div>
+        <h3>Women in their 20s, outside the capital</h3>
+        <dl><dt>Channel</dt><dd>Portal search</dd><dt>Avg. order</dt><dd class="num">≈ 8,300 KRW</dd><dt>Recency</dt><dd>Lowest</dd></dl>
+        <p class="action">Win-back campaigns and search marketing (SEO).</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="try">
+    <span class="eyebrow">Live demo · Tool 1 + Tool 2</span>
+    <h2>Try it as a new customer</h2>
+    <p class="muted">Pick a profile. The recommender ranks categories by lift (how much more often similar customers buy them than average). The coupon comes from the smart-coupon algorithm below.</p>
+    <div class="counter">
+      <form id="profile">
+        <fieldset><legend>Age group</legend><div class="chips" id="age"></div></fieldset>
+        <fieldset><legend>Gender</legend><div class="chips" id="gender"></div></fieldset>
+        <fieldset><legend><label for="region">Region</label></legend><select id="region"></select></fieldset>
+        <button class="btn" type="submit">Show my picks</button>
+      </form>
+      <div class="result" aria-live="polite">
+        <div class="profile" id="profileLine"></div>
+        <ol class="recs" id="recs"></ol>
+        <div class="offer"><span class="eyebrow">Your offer</span><span class="o" id="offer"></span><span class="why" id="offerWhy"></span></div>
+        <p class="why">Basket over 15,000 KRW gets free delivery, which lifts the typical 5,000–8,000 KRW order.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="coupons">
+    <span class="eyebrow">Tool 2 · Multi-armed bandit (Thompson sampling)</span>
+    <h2>Smart coupons that learn</h2>
+    <p>Today Crimson sends the same discount to everyone. The algorithm tests four offers, learns from every response and sends the winning offer more often.</p>
+    <p class="note"><b>Simulation.</b> The sample has no real coupon responses, so the response rates below are assumed for demonstration. In production the algorithm would learn from actual customer behaviour.</p>
+    <div class="controls">
+      <label for="seg">Segment</label>
+      <select id="seg"><option value="20s">20s</option><option value="30s" selected>30s</option><option value="40s+">40s and older</option></select>
+      <button class="btn" id="run" type="button">Run 1,500 sends</button>
+    </div>
+    <div class="charts">
+      <div class="chart"><h3>Which offer the algorithm sends</h3><canvas id="cShare" role="img" aria-label="Share of sends per offer over time"></canvas><div class="legend" id="legShare"></div></div>
+      <div class="chart"><h3>Cumulative purchases</h3><canvas id="cCum" role="img" aria-label="Cumulative purchases, smart coupons versus random coupons"></canvas><div class="legend"><span><i style="background:var(--c2)"></i>Smart coupons</span><span><i style="background:var(--muted)"></i>Same coupon for all (random)</span></div></div>
+    </div>
+    <p class="outcome" id="outcome"></p>
+  </section>
+
+  <section id="retention">
+    <span class="eyebrow">Tool 3 · RFM scoring</span>
+    <h2>Automated retention</h2>
+    <p class="muted">Each customer is scored 1–3 on Recency, Frequency and Monetary value. The segment decides which message goes out automatically, filled with the customer's last category.</p>
+    <div class="rfm">
+      <div class="bars" id="bars"></div>
+      <div class="msgs">
+        <div class="msg"><b>At risk · 17 customers</b><span>We miss you! 15% off Dairy for the next 7 days.</span></div>
+        <div class="msg"><b>Sleeping · 13 customers</b><span>It's been a while: free delivery on your next order.</span></div>
+        <div class="msg"><b>Active · 31 customers</b><span>Try a weekly Vegetable box with a subscriber discount.</span></div>
+        <div class="msg"><b>VIP · 6 customers</b><span>Early access to new regional meal kits.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="next">
+    <span class="eyebrow">Roadmap</span>
+    <h2>From rules to real learning</h2>
+    <p class="muted">A J48 decision tree predicted the purchase category for only 18.5% of customers (Kappa −0.05). Demographics alone are not enough; Crimson needs richer data.</p>
+    <ol class="road">
+      <li><span class="when">Now</span><h3>Segment rules</h3><p>Lift-based picks for new customers. Solves cold start.</p></li>
+      <li><span class="when">Now</span><h3>Smart coupons + RFM</h3><p>Self-learning offers and automatic win-back messages.</p></li>
+      <li class="next"><span class="when">Collect next</span><h3>Richer data</h3><p>Repeat purchases, browsing and search, abandoned carts, order time, household and diet survey.</p></li>
+      <li class="next"><span class="when">Then</span><h3>Collaborative filtering</h3><p>"Customers like you also bought", retrained weekly.</p></li>
+    </ol>
+  </section>
+
+  <footer>Crimson TFT · Sample of 92 customers, 2023 orders. Tools prototyped in Python; analysis in Weka and Radiant.</footer>
+</main>
+
+<script>
+const D = {"overall":{"vegetable team":0.3168,"Dairy C":0.1584,"Beverage/Tea C":0.1386,"Livestock team":0.1287,"Dry Food Team":0.1188,"fruit team":0.0792,"Fisheries Team":0.0594},"lift":{"age":{"20s":{"Beverage/Tea C":0.258,"Dairy C":1.804,"Dry Food Team":0.601,"Fisheries Team":0.0,"Livestock team":2.22,"fruit team":0.0,"vegetable team":1.015},"30s":{"Beverage/Tea C":1.688,"Dairy C":0.672,"Dry Food Team":0.716,"Fisheries Team":1.074,"Livestock team":0.661,"fruit team":1.612,"vegetable team":0.94},"40s":{"Beverage/Tea C":0.401,"Dairy C":0.701,"Dry Food Team":1.87,"Fisheries Team":2.806,"Livestock team":0.432,"fruit team":0.0,"vegetable team":1.227},"50s":{"Beverage/Tea C":0.902,"Dairy C":0.789,"Dry Food Team":2.104,"Fisheries Team":0.0,"Livestock team":0.0,"fruit team":3.156,"vegetable team":0.789}},"gender":{"Female":{"Beverage/Tea C":0.721,"Dairy C":0.947,"Dry Food Team":0.842,"Fisheries Team":0.281,"Livestock team":1.165,"fruit team":1.473,"vegetable team":1.157},"Male":{"Beverage/Tea C":1.408,"Dairy C":1.078,"Dry Food Team":1.232,"Fisheries Team":2.053,"Livestock team":0.758,"fruit team":0.308,"vegetable team":0.77}},"region":{"Chungcheongbuk-do":{"Beverage/Tea C":0.0,"Dairy C":1.578,"Dry Food Team":0.0,"Fisheries Team":0.0,"Livestock team":1.942,"fruit team":3.156,"vegetable team":0.789},"Chungcheongnam-do":{"Beverage/Tea C":2.405,"Dairy C":0.0,"Dry Food Team":0.0,"Fisheries Team":0.0,"Livestock team":0.0,"fruit team":0.0,"vegetable team":2.104},"Daejeon":{"Beverage/Tea C":0.656,"Dairy C":1.722,"Dry Food Team":1.53,"Fisheries Team":0.0,"Livestock team":0.706,"fruit team":1.148,"vegetable team":0.861},"Gangwon-do":{"Beverage/Tea C":1.443,"Dairy C":3.787,"Dry Food Team":0.0,"Fisheries Team":0.0,"Livestock team":0.0,"fruit team":0.0,"vegetable team":0.631},"Gyeonggi":{"Beverage/Tea C":1.336,"Dairy C":0.935,"Dry Food Team":1.559,"Fisheries Team":0.623,"Livestock team":0.863,"fruit team":0.468,"vegetable team":0.935},"Incheon":{"Beverage/Tea C":0.401,"Dairy C":1.403,"Dry Food Team":0.468,"Fisheries Team":2.806,"Livestock team":1.726,"fruit team":0.701,"vegetable team":0.701},"Sejong":{"Beverage/Tea C":0.0,"Dairy C":0.0,"Dry Food Team":1.052,"Fisheries Team":2.104,"Livestock team":1.942,"fruit team":0.0,"vegetable team":1.578},"Seoul":{"Beverage/Tea C":1.443,"Dairy C":0.253,"Dry Food Team":1.01,"Fisheries Team":0.673,"Livestock team":0.622,"fruit team":2.02,"vegetable team":1.136}}}};
+const NAMES = {"vegetable team":"Vegetables","Dairy C":"Dairy","Beverage/Tea C":"Beverages & tea","Livestock team":"Meat","Dry Food Team":"Dry food & grains","fruit team":"Fruit","Fisheries Team":"Seafood"};
+const EXAMPLES = {"vegetable team":"Fresh vegetables, tofu, eggs","Dairy C":"Maeil low-fat milk 1% 2.3L","Beverage/Tea C":"Caffe Bene cafe mocha 200ml ×2","Livestock team":"Domestic pork belly, imported beef","Dry Food Team":"Green tea laver, red clay rice","fruit team":"American lemons, domestic fruit","Fisheries Team":"General marine products"};
+
+/* ---- Tool 1: lift-based recommender ---- */
+function recommend(age, gender, region){
+  const cats = Object.keys(D.overall);
+  return cats.map(c=>{
+    let s = 1, parts=[];
+    [["age",age],["gender",gender],["region",region]].forEach(([k,v])=>{
+      const t = D.lift[k][v]; if(t){ const l = t[c]===0?0.5:t[c]; s*=l; parts.push(l); }
+    });
+    return {c, score: s*Math.sqrt(D.overall[c]), lift: parts.reduce((a,b)=>a*b,1)};
+  }).sort((a,b)=>b.score-a.score).slice(0,3);
+}
+
+/* ---- Tool 2: Thompson sampling bandit ---- */
+const OFFERS = ["10% discount","Free delivery","Bonus points","Free gift"];
+const TRUE = {"20s":[0.06,0.10,0.05,0.12],"30s":[0.07,0.14,0.09,0.06],"40s+":[0.11,0.06,0.08,0.05]};
+function rngFactory(seed){ let s = seed>>>0; return ()=>{ s = (s + 0x6D2B79F5)>>>0; let t=s; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+function normal(r){ let u=0,v=0; while(!u)u=r(); while(!v)v=r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function gamma(k,r){ if(k<1) return gamma(k+1,r)*Math.pow(r(),1/k); const d=k-1/3, c=1/Math.sqrt(9*d);
+  for(;;){ let x,v; do{ x=normal(r); v=1+c*x; }while(v<=0); v=v*v*v; const u=r();
+    if(u<1-0.0331*x*x*x*x || Math.log(u)<0.5*x*x+d*(1-v+Math.log(v))) return d*v; } }
+function beta(a,b,r){ const x=gamma(a,r), y=gamma(b,r); return x/(x+y); }
+function runBandit(seg, n, seed){
+  const r = rngFactory(seed), p = TRUE[seg], w=[1,1,1,1], l=[1,1,1,1], chosen=[], cum=[]; let tot=0;
+  for(let i=0;i<n;i++){ let best=0,bv=-1; for(let k=0;k<4;k++){ const g=beta(w[k],l[k],r); if(g>bv){bv=g;best=k;} }
+    const hit = r()<p[best]; hit?w[best]++:l[best]++; tot+=hit; chosen.push(best); cum.push(tot); }
+  return {chosen, cum};
+}
+function runRandom(seg, n, seed){ const r=rngFactory(seed), p=TRUE[seg], cum=[]; let tot=0;
+  for(let i=0;i<n;i++){ const k=Math.floor(r()*4); tot+= r()<p[k]; cum.push(tot); } return cum; }
+function winner(seg){ const {chosen}=runBandit(seg,1500,7); const c=[0,0,0,0]; chosen.slice(-300).forEach(k=>c[k]++); return OFFERS[c.indexOf(Math.max(...c))]; }
+const BEST = {"20s":winner("20s"),"30s":winner("30s"),"40s+":winner("40s+")};
+
+/* ---- UI: profile form ---- */
+function chips(id, name, values, checked){
+  document.getElementById(id).innerHTML = values.map((v,i)=>`<input type="radio" id="${name}-${i}" name="${name}" value="${v}" ${v===checked?"checked":""}><label for="${name}-${i}">${v}</label>`).join("");
+}
+chips("age","age",["20s","30s","40s","50s"],"30s");
+chips("gender","gender",["Female","Male"],"Female");
+const regions = ["Seoul","Gyeonggi","Incheon","Daejeon","Sejong","Gangwon-do","Chungcheongbuk-do","Chungcheongnam-do"];
+document.getElementById("region").innerHTML = regions.map(r=>`<option ${r==="Seoul"?"selected":""}>${r}</option>`).join("");
+
+function showPicks(){
+  const f = document.getElementById("profile");
+  const age = f.age.value, gender = f.gender.value, region = f.region.value;
+  document.getElementById("profileLine").textContent = `Profile: ${gender}, ${age}, ${region}`;
+  document.getElementById("recs").innerHTML = recommend(age,gender,region).map((r,i)=>
+    `<li class="rec"><span class="rank">${i+1}</span><span><span class="name">${NAMES[r.c]}</span><br><span class="ex">e.g. ${EXAMPLES[r.c]}</span></span><span class="lift">×${r.lift.toFixed(1)} vs avg</span></li>`).join("");
+  const seg = (age==="40s"||age==="50s") ? "40s+" : age;
+  document.getElementById("offer").textContent = BEST[seg];
+  document.getElementById("offerWhy").textContent = `Chosen by the smart-coupon algorithm for the ${seg==="40s+"?"40s and older":seg} segment (simulated).`;
+}
+document.getElementById("profile").addEventListener("submit", e=>{ e.preventDefault(); showPicks(); });
+document.getElementById("profile").addEventListener("change", showPicks);
+showPicks();
+
+/* ---- UI: bandit charts ---- */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SERIES = ["--c1","--c2","--c3","--c4"];
+document.getElementById("legShare").innerHTML = OFFERS.map((o,i)=>`<span><i style="background:var(${SERIES[i]})"></i>${o}</span>`).join("");
+
+function setup(canvas){ const dpr = window.devicePixelRatio||1, w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w*dpr; canvas.height = h*dpr; const ctx = canvas.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0); return {ctx,w,h}; }
+function axes(ctx,w,h,pad,ymax,yfmt,n){
+  ctx.clearRect(0,0,w,h); ctx.font = "12px " + css("--mono").split(",")[0]; ctx.fillStyle = css("--muted"); ctx.strokeStyle = css("--line"); ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const y = pad.t + (h-pad.t-pad.b)*(1-i/4); ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(w-pad.r,y); ctx.stroke();
+    ctx.textAlign="right"; ctx.textBaseline="middle"; ctx.fillText(yfmt(ymax*i/4), pad.l-6, y); }
+  ctx.textAlign="center"; ctx.textBaseline="top"; [0,500,1000,1500].forEach(v=>{ const x = pad.l + (w-pad.l-pad.r)*v/n; ctx.fillText(v.toLocaleString("en-US"), x, h-pad.b+6); });
+}
+function line(ctx,pts,color,w=2){ ctx.strokeStyle=color; ctx.lineWidth=w; ctx.beginPath(); pts.forEach(([x,y],i)=> i?ctx.lineTo(x,y):ctx.moveTo(x,y)); ctx.stroke(); }
+
+let animId = 0;
+function runSim(){
+  const seg = document.getElementById("seg").value, N = 1500, W = 100, seed = Math.floor(Math.random()*1e9);
+  const b = runBandit(seg, N, seed), rnd = runRandom(seg, N, seed+1);
+  const shares = OFFERS.map((_,k)=>{ const out=[]; let c=0; for(let i=0;i<N;i++){ c += b.chosen[i]===k; if(i>=W) c -= b.chosen[i-W]===k; if(i>=W-1) out.push([i, c/W]); } return out; });
+  const ymax = Math.ceil(Math.max(b.cum[N-1], rnd[N-1])/50)*50;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const id = ++animId; let step = reduce ? N : 0;
+  function frame(){
+    if(id!==animId) return;
+    step = Math.min(N, step + 30);
+    const A = setup(document.getElementById("cShare")), pad = {l:44,r:10,t:8,b:24};
+    axes(A.ctx,A.w,A.h,pad,1,v=>Math.round(v*100)+"%",N);
+    const X = i => pad.l + (A.w-pad.l-pad.r)*i/N, Y1 = v => pad.t + (A.h-pad.t-pad.b)*(1-v);
+    shares.forEach((s,k)=> line(A.ctx, s.filter(p=>p[0]<step).map(([i,v])=>[X(i),Y1(v)]), css(SERIES[k])));
+    const B = setup(document.getElementById("cCum"));
+    axes(B.ctx,B.w,B.h,pad,ymax,v=>Math.round(v),N);
+    const Y2 = v => pad.t + (B.h-pad.t-pad.b)*(1-v/ymax);
+    line(B.ctx, rnd.slice(0,step).map((v,i)=>[X(i),Y2(v)]), css("--muted"));
+    line(B.ctx, b.cum.slice(0,step).map((v,i)=>[X(i),Y2(v)]), css("--c2"), 2.5);
+    if(step<N) requestAnimationFrame(frame);
+    else {
+      const c=[0,0,0,0]; b.chosen.slice(-300).forEach(k=>c[k]++); const k=c.indexOf(Math.max(...c));
+      const gain = Math.round((b.cum[N-1]/rnd[N-1]-1)*100);
+      document.getElementById("outcome").innerHTML = `The algorithm settled on <b>${OFFERS[k]}</b> (${Math.round(c[k]/3)}% of the last 300 sends). Purchases: <strong>${b.cum[N-1]}</strong> vs ${rnd[N-1]} with one coupon for all (${gain>=0?"+":""}${gain}%).`;
+    }
+  }
+  frame();
+}
+document.getElementById("run").addEventListener("click", runSim);
+document.getElementById("seg").addEventListener("change", runSim);
+window.addEventListener("resize", ()=>{ clearTimeout(window._rz); window._rz=setTimeout(runSim,200); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", runSim);
+new MutationObserver(runSim).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+runSim();
+
+/* ---- RFM bars ---- */
+const RFM = [["Active",31,"good"],["Needs attention",25,""],["At risk",17,"warn"],["Sleeping",13,"warn"],["VIP",6,"good"]];
+document.getElementById("bars").innerHTML = RFM.map(([n,v,c])=>`<div class="bar ${c}"><span>${n}</span><span class="track"><span class="fill" style="width:${v/31*100}%;display:block"></span></span><span class="num">${v}</span></div>`).join("");
+</script>
+
+</body>
+</html>
