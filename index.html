@@ -122,6 +122,20 @@ select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:
 .road li{border-top:3px solid var(--crimson);padding-top:12px;display:grid;gap:6px}
 .road li.next{border-color:var(--line)}
 .road .when{font:500 .75rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* recipe */
+.recipe{border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:18px;display:grid;gap:12px}
+.recipe .top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.recipe h3{font-size:1.3rem}
+.recipe .meta{font:500 .8rem var(--mono);color:var(--muted)}
+.recipe .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:18px}
+@media (max-width:560px){.recipe .cols{grid-template-columns:minmax(0,1fr)}}
+.recipe h4{margin:0 0 6px;font:600 .8rem var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--crimson)}
+.recipe ul,.recipe ol{margin:0;padding-left:1.2em;display:grid;gap:4px;font-size:.95rem}
+.kit{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-top:1px dashed var(--line);padding-top:12px}
+.kit .btn{padding:10px 14px;font-size:.95rem}
+.kit .added{color:var(--leaf);font-weight:600}
+.alt{font-size:.9rem;color:var(--muted)}
+.alt button{font:inherit;background:none;border:0;padding:0;color:var(--crimson);text-decoration:underline;cursor:pointer}
 footer{padding-top:32px;border-top:1px solid var(--line);font-size:.9rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -178,7 +192,7 @@ footer{padding-top:32px;border-top:1px solid var(--line);font-size:.9rem;color:v
   <section id="try">
     <span class="eyebrow">Live demo · Tool 1 + Tool 2</span>
     <h2>Try it as a new customer</h2>
-    <p class="muted">Pick a profile. The recommender ranks categories by lift (how much more often similar customers buy them than average). The coupon comes from the smart-coupon algorithm below.</p>
+    <p class="muted">Pick a profile. The recommender ranks categories by lift (how much more often similar customers buy them than average). The coupon comes from the smart-coupon algorithm below, and a recipe for the top category turns the recommendation into a full basket.</p>
     <div class="counter">
       <form id="profile">
         <fieldset><legend>Age group</legend><div class="chips" id="age"></div></fieldset>
@@ -190,7 +204,7 @@ footer{padding-top:32px;border-top:1px solid var(--line);font-size:.9rem;color:v
         <div class="profile" id="profileLine"></div>
         <ol class="recs" id="recs"></ol>
         <div class="offer"><span class="eyebrow">Your offer</span><span class="o" id="offer"></span><span class="why" id="offerWhy"></span></div>
-        <p class="why">Basket over 15,000 KRW gets free delivery, which lifts the typical 5,000–8,000 KRW order.</p>
+        <article class="recipe" id="recipe" aria-live="polite"></article>
       </div>
     </div>
   </section>
@@ -247,6 +261,52 @@ const D = {"overall":{"vegetable team":0.3168,"Dairy C":0.1584,"Beverage/Tea C":
 const NAMES = {"vegetable team":"Vegetables","Dairy C":"Dairy","Beverage/Tea C":"Beverages & tea","Livestock team":"Meat","Dry Food Team":"Dry food & grains","fruit team":"Fruit","Fisheries Team":"Seafood"};
 const EXAMPLES = {"vegetable team":"Fresh vegetables, tofu, eggs","Dairy C":"Maeil low-fat milk 1% 2.3L","Beverage/Tea C":"Caffe Bene cafe mocha 200ml ×2","Livestock team":"Domestic pork belly, imported beef","Dry Food Team":"Green tea laver, red clay rice","fruit team":"American lemons, domestic fruit","Fisheries Team":"General marine products"};
 
+/* ---- Recipes: one per category, shown for the top recommendation ---- */
+const RECIPES = {
+  "Livestock team":{title:"Chicken & rice bowl",time:"25 min",
+    ing:["150 g chicken breast","1 cup cooked rice","1/2 cucumber","1 small carrot","1 tbsp olive oil","Salt and pepper"],
+    steps:["Cut the chicken into small pieces.","Heat the olive oil in a pan.","Add the chicken, salt and pepper. Cook for 10–12 minutes.","Chop the cucumber and carrot into small pieces.","Put the rice in a bowl and top with the chicken and vegetables."]},
+  "Dairy C":{title:"Yogurt & berry parfait",time:"5 min",
+    ing:["1 cup plain yogurt","1/2 cup strawberries","1/2 cup blueberries","3 tbsp granola","1 tsp honey (optional)"],
+    steps:["Wash the berries and cut the strawberries into small pieces.","Pour some yogurt into a glass.","Add a layer of berries and granola.","Repeat the layers.","Drizzle honey on top if you like."]},
+  "fruit team":{title:"Banana & strawberry smoothie",time:"5 min",
+    ing:["1 banana","5 strawberries","1/2 cup milk or yogurt","3–4 ice cubes (optional)"],
+    steps:["Peel the banana and wash the strawberries.","Cut the fruit into small pieces.","Put all ingredients in a blender.","Blend until smooth.","Pour into a glass and serve."]},
+  "vegetable team":{title:"Simple vegetable pasta",time:"20 min",
+    ing:["100 g pasta","1 tomato","1/2 bell pepper","1/2 zucchini","1 tbsp olive oil","Salt and pepper"],
+    steps:["Cook the pasta following the package instructions.","Wash and chop the vegetables.","Heat the olive oil in a pan.","Add the vegetables and cook for 7–10 minutes.","Add the cooked pasta, salt and pepper, mix well and serve warm."]},
+  "Fisheries Team":{title:"Garlic lemon shrimp",time:"15 min",
+    ing:["200 g peeled shrimp","1 tbsp olive oil","1 garlic clove","1/2 lemon","Salt and pepper","Fresh parsley (optional)"],
+    steps:["Rinse the shrimp and pat dry with a paper towel.","Heat the olive oil in a pan.","Add the chopped garlic and cook for about 30 seconds.","Add the shrimp and cook for 3–5 minutes until pink.","Squeeze lemon juice over the shrimp, season and add parsley. Serve with rice or bread."]},
+  "Beverage/Tea C":{title:"Iced lemon green tea",time:"10 min",
+    ing:["2 green tea bags","500 ml hot water","1/2 lemon","1 tbsp honey","Ice cubes","Fresh mint (optional)"],
+    steps:["Steep the tea bags in hot water for 3 minutes, then remove them.","Stir in the honey while the tea is warm.","Let the tea cool for a few minutes.","Fill a glass with ice and pour the tea over it.","Add lemon slices and mint, then serve."]},
+  "Dry Food Team":{title:"Seaweed rice bowl",time:"15 min",
+    ing:["1 cup cooked rice","2 sheets seasoned laver (gim)","1 egg","1 tsp sesame oil","1 tsp soy sauce","Sesame seeds"],
+    steps:["Fry the egg in a pan.","Put the warm rice in a bowl.","Mix in the sesame oil and soy sauce.","Crumble the laver over the rice and place the egg on top.","Sprinkle with sesame seeds and serve."]}
+};
+let recipeIndex = 0, lastPicks = [], lastCoupon = "";
+function renderRecipe(){
+  const cat = lastPicks[recipeIndex].c, r = RECIPES[cat];
+  const others = lastPicks.map((p,i)=>i===recipeIndex?"":`<button type="button" data-i="${i}">${NAMES[p.c]}</button>`).filter(Boolean).join(" or ");
+  const kitOffer = lastCoupon==="Free delivery" ? "Free delivery on this recipe kit"
+                 : lastCoupon==="10% discount" ? "10% off the whole recipe kit"
+                 : lastCoupon==="Bonus points" ? "Double bonus points on this recipe kit"
+                 : "Free gift with this recipe kit";
+  document.getElementById("recipe").innerHTML = `
+    <div class="top"><span class="eyebrow">Recipe for your #${recipeIndex+1} pick · ${NAMES[cat]}</span><span class="meta">Easy · ${r.time}</span></div>
+    <h3>${r.title}</h3>
+    <div class="cols">
+      <div><h4>Ingredients</h4><ul>${r.ing.map(x=>`<li>${x}</li>`).join("")}</ul></div>
+      <div><h4>Steps</h4><ol>${r.steps.map(x=>`<li>${x}</li>`).join("")}</ol></div>
+    </div>
+    <div class="kit"><span><b>${kitOffer}</b><br><span class="why">All ${r.ing.length} ingredients in one basket</span></span>
+      <button class="btn" type="button" id="addKit">Add recipe kit to cart</button></div>
+    <p class="alt">Show a recipe for ${others} instead.</p>`;
+  document.getElementById("addKit").addEventListener("click", e=>{ e.currentTarget.outerHTML = '<span class="added">✓ Recipe kit added to cart</span>'; });
+  document.querySelectorAll("#recipe .alt button").forEach(b=>b.addEventListener("click",()=>{ recipeIndex=+b.dataset.i; renderRecipe(); }));
+}
+
 /* ---- Tool 1: lift-based recommender ---- */
 function recommend(age, gender, region){
   const cats = Object.keys(D.overall);
@@ -292,11 +352,14 @@ function showPicks(){
   const f = document.getElementById("profile");
   const age = f.age.value, gender = f.gender.value, region = f.region.value;
   document.getElementById("profileLine").textContent = `Profile: ${gender}, ${age}, ${region}`;
-  document.getElementById("recs").innerHTML = recommend(age,gender,region).map((r,i)=>
+  lastPicks = recommend(age,gender,region); recipeIndex = 0;
+  document.getElementById("recs").innerHTML = lastPicks.map((r,i)=>
     `<li class="rec"><span class="rank">${i+1}</span><span><span class="name">${NAMES[r.c]}</span><br><span class="ex">e.g. ${EXAMPLES[r.c]}</span></span><span class="lift">×${r.lift.toFixed(1)} vs avg</span></li>`).join("");
   const seg = (age==="40s"||age==="50s") ? "40s+" : age;
   document.getElementById("offer").textContent = BEST[seg];
   document.getElementById("offerWhy").textContent = `Chosen by the smart-coupon algorithm for the ${seg==="40s+"?"40s and older":seg} segment (simulated).`;
+  lastCoupon = BEST[seg];
+  renderRecipe();
 }
 document.getElementById("profile").addEventListener("submit", e=>{ e.preventDefault(); showPicks(); });
 document.getElementById("profile").addEventListener("change", showPicks);
